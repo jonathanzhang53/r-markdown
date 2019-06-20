@@ -1,0 +1,123 @@
+---
+title: "Nodes and Connections"
+author: "Jonathan Zhang"
+date: "6/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(spatstat)
+```
+
+## Task 1
+* Initialize 1000 nodes in a data structure
+* Using a binary system, make connections between nodes with a success rate of 5%
+  + 1 means that a connection is present between two nodes
+  + 0 means that there is no connection
+* Plot a histogram of each node's number of connections
+  + Make observations about the distribution
+  
+The following plot is meant to visualize the 1000 nodes (not representative of real values).
+
+```{r, echo=FALSE}
+plot(runifpoint(1000, win=owin(c(0,1),c(0,1)), giveup=1000), main = '1000 Node Visualization (1x1)')
+```
+
+### Generating the Matrix
+
+```{r}
+mat = matrix(runif(1000000),1000)
+for(row in 1:nrow(mat)) {
+  for(col in row:ncol(mat)) {
+      if (mat[row,col] < 0.05 && row != col){
+        mat[row,col] = 1
+        mat[col,row] = 1
+      } else {
+        mat[row,col] = 0
+        mat[col,row] = 0
+      }
+  }
+}
+```
+
+### Generating the Histogram of Connections
+
+```{r}
+data1 = rowSums(mat)
+hist(data1)
+summary(data1)
+```
+
+### Some Stats
+
+```{r, eval = FALSE}
+qqnorm(data1)
+qqline(data1)
+```
+
+## Task 2
+* Randomly pick a node and record the number of connections
+* Reiterate 1000 times and plot a histogram
+  + Make observations about the distribution
+
+### Generating the Histogram of Connections
+
+```{r}
+data2 = vector(mode = "numeric", length = 1000)
+for (i in 1:1000) {
+  x = trunc(runif(1,0,1000) + 1)
+  y = sum(mat[x,])
+  data2[i] = y
+}
+hist(data2)
+summary(data2)
+```
+
+### Some Stats
+
+```{r, eval = FALSE}
+qqnorm(data1)
+qqline(data1)
+```
+
+## Task 3
+* Generate a path starting with a random node, only moving along connections (but not backwards)
+  + Move along 1000 times, but end when a node has no further connections besides the one previously traversed (highly unlikely)
+* Along each node on the path, record the number of connections
+* Plot a histogram
+  + Make observations about the distribution
+
+```{r}
+data3 = vector(mode = "numeric")
+start = trunc(runif(1,0,1000) + 1)
+list = which(mat[start,] == 1)
+back = sample(list, 1)
+for (k in 1:1000) {
+  node = back
+  list = which(mat[node,] == 1)
+  tempback = back
+  while (tempback == back) {
+    back = sample(list, 1)
+  }
+  data3 = c(data3, sum(mat[node,]))
+}
+hist(data3)
+summary(data3)
+```
+
+## Task 4
+* Count the number of potential triangles in the graph
+
+A triangle needs 3 distinct nodes, and the 3 nodes cannot be collinear (which is negligible due to dimensionality). Therefore, the number of 3 node combinations can be calculated as long as there are connections between the 3.
+
+### Answer 
+
+```{r}
+ans = 0
+for (p in 1:1000) {
+  list = which(mat[p,] == 1)
+  ans = ans + (sum(mat[list,list]) / 2)
+}
+print(ans / 3)
+```
