@@ -1,0 +1,74 @@
+---
+title: "Mapping Human Genes to Mice Genes"
+author: "Jonathan Zhang"
+date: "6/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+```
+
+## The Task
+* Find the mouse homolog to each human ligand and receptor
+* Export the homologs in the form of an edgelist, with the mouse ligand on one column with the human ligand to the right
+  + Adjacent to the 2 ligand columns will be 2 receptor columns
+  + Multiple matches for mouse genes will result in concatenated genes separated by a space
+  + If no match is found, NA will be the value
+  + Ligands and receptors correspond in a row
+  + Final product is an xlsx
+  
+### Initial Resources
+* A list Z of 2557 obs. with 4 variables (Ligand.ApprovedSymbol, Ligand.Name Receptor.ApprovedSymbol, Receptor.Name) showing human ligands and their corresponding receptors
+* A xlsx file which has 20947 rows with 4 columns (geneSymbol.mm, geneSymbol.hg, entrezId.mm, entrezId.hg) showing the gene homologs between mice and humans
+
+```{r, eval = FALSE}
+ligandgene.hg = Z$Ligand.ApprovedSymbol
+receptorgene.hg = Z$Receptor.ApprovedSymbol
+homologs = read.xlsx(file = "homolog.xlsx", sheet = 1, sheetName = "mouse_human")
+humanmap = ctrlf$geneSymbol.hg
+humanmap = as.character(humanmap)
+mousemap = ctrlf$geneSymbol.mm
+mousemap = as.character(mousemap)
+```
+
+```{r, eval = FALSE}
+ligandgene.mm = list()
+for (i in 1:length(ligandgene.hg)) {
+    temp = which(humanmap == ligandgene.hg[i])
+    whichtemp = character(0)
+    for (k in 1:length(temp)) {
+        whichtemp = paste(whichtemp, mousemap[temp[k]], collapse = " ")
+    }
+    ligandgene.mm[[i]] = whichtemp
+    rm(temp)
+    rm(whichtemp)
+}
+ligandgene.mm = as.character(ligandgene.mm)
+ligandgene.mm[ligandgene.mm == " NA "] = NA_character_
+ligandgene.mm = trimws(ligandgene.mm)
+ligandmap = data.frame(ligandgene.hg,ligandgene.mm)
+
+receptorgene.mm = list()
+for (i in 1:length(receptors)) {
+    temp = which(humanmap == receptors[i])
+    whichtemp = character(0)
+    for (k in 1:length(temp)) {
+        whichtemp = paste(whichtemp, mousemap[temp[k]], collapse = " ")
+    }
+    receptorgene.mm[[i]] = whichtemp
+    rm(temp)
+    rm(whichtemp)
+}
+receptorgene.mm = as.character(receptorgene.mm)
+receptorgene.mm[receptorgene.mm == " NA "] = NA_character_
+receptorgene.mm = trimws(receptorgene.mm)
+receptormap = data.frame(receptors,receptorgene.mm)
+
+
+write.xlsx(data.frame(ligandgene.hg, ligandgene.mm, receptorgene.hg, receptorgene.mm),"hg-mm-ligandreceptor-homologs.xlsx", row.names= FALSE)
+```
+
+## Result
+The task was accomplished. The variables ligandmap and receptormap (length 2557), can be used for further manipulation.
