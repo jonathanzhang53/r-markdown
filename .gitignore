@@ -4,6 +4,11 @@ Human to Mouse Gene List (Ligands and Receptors)/homolog.xlsx
 Human to Mouse Gene List (Ligands and Receptors)/data.xlsx
 Human to Mouse Gene List (Ligands and Receptors)/NatComm2015_Ligand_Receptor.RData
 
+Sorting Gene Database/mat_genes_mouse.mat
+Sorting Gene Database/mouse_database_final.RData
+Sorting Gene Database/mouse_database_initial.RData
+Sorting Gene Database/mouse_receptors_and_ligands.RData
+
 # History files
 .Rhistory
 .Rapp.history

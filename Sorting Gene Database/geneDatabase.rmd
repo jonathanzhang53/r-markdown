@@ -1,0 +1,119 @@
+---
+title: "Sorting Gene Database"
+author: "Jonathan Zhang"
+date: "6/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(R.matlab)
+library(dplyr)
+# library(xlsx) -need to download java and set JAVA_HOME variable
+```
+
+``` {r, eval = FALSE}
+# Some Notes:
+  # fix rmarkdown runtime issue with the plots
+  # some combinations of protein A, protein B, and mode were the same but there were multiple scores (basically same pairing but different scores), so the highest one was taken.
+```
+
+## Task
+* Extract all pairings involving a mouse ligand and receptor
+* Save the data for public use
+
+## Variable Definitions
+1. **ligands.mm** : vector containing gene names of mouse ligands [412 elements]
+2. **receptors.mm** : vector containing gene names of mouse receptors [2,332 elements]
+3. **dict** : data frame with general gene / protein data for the database [270412 elements]
+  + _GeneID_ : vector of genes by their ID [67,603 elements]
+  + _GeneName_ : vector of genes by their name [67,603 elements]
+  + _ProteinID_ : vector of respective proteins expressed by genes [67,603 elements]
+  + _MGI.sym_ : vector of genes by their MGI Accession ID
+4. **pairID** : data frame with gene pairings as edgelist of their IDs along with the mode of interaction and score [3,041,178 elements]
+  + _pA_ : vector of first genes' IDs [1,013,726 elements]
+  + _pB_ : vector of second genes' IDs [1,013,726 elements]
+  + _mode_ : vector of type of interaction [1,013,726 elements]
+  + _score_ : vector of score which indicates reliability [1,013,726 elements]
+5. **pairGene** : data frame with gene pairings as edgelist of their gene names along with the mode of interaction [3,041,178 elements]
+  + _pA_Gene_ : vector of first genes' names [1,013,726 elements]
+  + _pB_Gene_ : vector of second genes' names [1,013,726 elements]
+  + _mode_ : vector of type of interaction [1,013,726 elements]
+  + _score_ : vector of score which indicates reliability [1,013,726 elements]
+6. **Z** : list of all of the data from the `.mat` file detailing the gene interactions (converted with `readmat()`)
+
+### Visualizing the Database
+
+```{r modes, eval = FALSE}
+modev = as.factor(as.vector(unlist(Z$mode))) 
+modeplot = summary(modev)
+modeplot = modeplot[order(modeplot)]
+barplot(modeplot, las = 2)
+print(modeplot)
+```
+
+```{r scores, eval = FALSE}
+hist(Z$score)
+summary(Z$score)
+```
+
+### Manipulating the Dataframe
+
+```{r, eval = FALSE}
+names = vector(mode="character")
+master = data.frame(pairGene$pA_Gene,pairGene$pB_Gene,pairGene$mode, pairGene$score, pairID$pA, pairID$pB)
+names(master) = c("pA_Gene","pB_Gene","mode","score","pA_ID","pB_ID")
+x = unique(master)
+x = x[order(x$score, decreasing = TRUE),]
+x = distinct(x, pA_Gene, pB_Gene,mode, .keep_all = TRUE) # eliminates duplicates without considering score [603061 elements]
+for (i in 1:length(x$score)) { # stores unique row names made of gene names and mode
+    names[i] = paste(x$pA_Gene[i], x$pB_Gene[i], x$mode[i], x$score[i], collapse = " ")
+}
+rownames(x) = names # assigns the row names
+```
+
+Now we arrive at a dataframe with no duplicate combinations of protein A, protein B, and mode. 
+
+### Searching the List
+
+```{r, eval = FALSE}
+p1 = x$pA_Gene 
+temp = p1 %in% ligands.mm 
+xligandsA = x[which(temp==TRUE),] # extracts all pairs where pA = ligand
+p1B = xligandsA$pB_Gene # vector of pB where corresponding pA = ligand
+temp = p1B %in% receptors.mm 
+ligands_A = xligandsA[which(temp == TRUE),] # data frame where pA = ligand and pB = receptor
+
+p2 = x$pB_Gene 
+temp = p2 %in% ligands.mm 
+xligandsB = x[which(temp==TRUE),] # extracts all pairs where pB = ligand
+p2A = xligandsB$pA_Gene # vector of pA where corresponding pB = ligand
+temp = p2A %in% receptors.mm 
+ligands_B = xligandsB[which(temp == TRUE),] # data frame where pA = receptor and pB = ligand
+
+rm(temp, i)
+
+ligands_B = ligands_B[c(2,1,3,4,5,6)]
+names(ligands_B) = c("pA_Gene","pB_Gene","mode","score","pA_ID","pB_ID")
+ligands_A$rows = rownames(ligands_A)
+ligands_B$rows = rownames(ligands_B)
+pairs = union(ligands_A,ligands_B)
+pairs = distinct(pairs, pA_Gene, pB_Gene, mode, .keep_all = TRUE)
+rownames(pairs) = pairs$rows
+pairs = subset(pairs,select = -c(rows))
+```
+
+# Visualizing the Final Data
+
+```{r, eval = FALSE}
+modef = as.factor(pairs$mode) 
+modepairs = summary(modef)
+modepairs = modepairs[order(modepairs)]
+barplot(modepairs, las = 2)
+print(modepairs)
+```
+
+```{r, eval = FALSE}
+hist(pairs$score)
+summary(pairs$score)
+```
