@@ -1,0 +1,31 @@
+---
+title: "Seurat Functions"
+author: "Jonathan Zhang"
+date: "7/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Seurat)
+```
+
+## Visualization Functions
+These simple functions made it easier to pull up vln plots and tSNE graphs instead of having to repaste longer function calls.
+
+```{r}
+vln = function(...) {
+    genes = list(...)
+    VlnPlot(d,features.plot=unlist(genes))
+}
+tsne = function(...) {
+    genes = list(...)
+    FeaturePlot(object = d, features.plot = unlist(genes), cols.use = c("grey", "blue"), reduction.use = "tsne")
+}
+```
+
+## Downsampling for DE (Differentially Expressed) Genes
+https://github.com/satijalab/seurat/issues/1794
+
+## Handy Functions
+https://github.com/satijalab/seurat/issues/771
