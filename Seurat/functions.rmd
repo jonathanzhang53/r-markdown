@@ -27,5 +27,15 @@ tsne = function(...) {
 ## Downsampling for DE (Differentially Expressed) Genes
 https://github.com/satijalab/seurat/issues/1794
 
+Seurat's FindMarkers() and FindAllMarkers() functions help find differentially expressed genes by comparing clusters or groups of clusters. However, some differentially expressed genes are ubiquitous but still detected as DE genes due to maybe a higher expression in one cluster than the other (obviously, ubiquitous genes will not help classify clusters). Also, other genes are simply unhelpful for cluster differentiation. 
+
+By curating a gene database with relevant genes, we can cross reference the DE genes with our database and filter the list of DE genes to only those that are included in the database. In the case of immunophenotyping, the database would include all clusters of differentiation (CD/Cd markers) and key transcription factors in immune cells.
+
+This way, I can concentrate on DE genes that will actually help me identify the phenotype of a cluster.
+
+```{r}
+
+```
+
 ## Handy Functions
 https://github.com/satijalab/seurat/issues/771
