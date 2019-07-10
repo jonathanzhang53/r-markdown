@@ -8,7 +8,13 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(Seurat)
+library(gplots)
+library(ggcorrplot)
 ```
+
+Note: My Seurat object is stored in d, and d_mica is a branched form of d, while d is kept as a reference just in case. 
+d_aux is created in corr() as another branch.
+Seurat Version: 2.3.4
 
 ## Visualization Functions
 These simple functions made it easier to pull up vln plots and tSNE graphs instead of having to repaste longer function calls.
@@ -22,20 +28,68 @@ tsne = function(...) {
     genes = list(...)
     FeaturePlot(object = d, features.plot = unlist(genes), cols.use = c("grey", "blue"), reduction.use = "tsne")
 }
+corr = function(...) {
+    pick_genes <<- unlist(list(...))
+    d_aux = d_mica
+    d_aux@ident = factor(as.character(d_mica@ident))
+    
+    Z = as.matrix(d_aux@data[pick_genes,])
+    
+    avg_markers_expr <<- matrix(NA, length(table(d_aux@ident)), length(pick_genes))
+    rownames(avg_markers_expr) <<- names(table(d_aux@ident))
+    colnames(avg_markers_expr) <<- pick_genes
+    
+    for (clust in names(table(d_aux@ident))){
+        iclust = which(d_aux@ident == clust)
+        for (g in pick_genes){
+            avg_markers_expr[as.character(clust),g] <<- mean(Z[g,iclust])
+        }
+    }
+    
+    corr1 <<- cor(t(avg_markers_expr))
+    corr2 <<- cor(avg_markers_expr)
+}
+plotcorr = function (correlation) { # meant to be used after corr() with corr1 and corr2 as parameters
+    ggcorrplot(correlation, hc.order = TRUE, outline.col = "white")
+} 
+heat = function () { # meant to be used after corr() with no parameter since avg_markers_expr is already set
+	heatmap.2(avg_markers_expr)
+}
+heatc = function (custom_heat) { # custom heatmap parameter
+	heatmap.2(custom_heat)
+}
 ```
 
 ## Downsampling for DE (Differentially Expressed) Genes
 https://github.com/satijalab/seurat/issues/1794
 
-Seurat's FindMarkers() and FindAllMarkers() functions help find differentially expressed genes by comparing clusters or groups of clusters. However, some differentially expressed genes are ubiquitous but still detected as DE genes due to maybe a higher expression in one cluster than the other (obviously, ubiquitous genes will not help classify clusters). Also, other genes are simply unhelpful for cluster differentiation. 
+Seurat has functions FindMarkers() and FindAllMarkers() functions help find differentially expressed genes by comparing 
+clusters or groups of clusters. However, some differentially expressed genes are ubiquitous but still detected as DE genes 
+due to maybe a higher expression in one cluster than the other (obviously, ubiquitous genes will not help classify clusters). 
+Also, other genes are simply unhelpful for cluster differentiation. 
 
-By curating a gene database with relevant genes, we can cross reference the DE genes with our database and filter the list of DE genes to only those that are included in the database. In the case of immunophenotyping, the database would include all clusters of differentiation (CD/Cd markers) and key transcription factors in immune cells.
+By curating a gene database with relevant genes, we can cross reference the DE genes with our database and filter the list 
+of DE genes to only those that are included in the database. In the case of immunophenotyping, the database would include 
+all clusters of differentiation (CD/Cd markers) and key transcription factors in immune cells.
 
 This way, I can concentrate on DE genes that will actually help me identify the phenotype of a cluster.
 
-```{r}
+To begin downsampling, simply create a character vector with the curated gene names.
 
+```{r, eval = FALSE}
+curated = c() # add genes here or extract from other source
+de_genes = FindMarkers(d, ident.1 = 1, ident.2 = c(3:5)) # replace with your own idents and parameters
+# https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html shows you how to use FindMarkers
+de_genes$rows = rownames(de_genes)
+de_genes = de_genes[de_genes$rows %in% curated]
 ```
 
 ## Handy Functions
-https://github.com/satijalab/seurat/issues/771
+https://github.com/satijalab/seurat/issues/771 
+
+```{r, eval = FALSE}
+# Solution to GitHub issue
+for (i in 1:30) {
+	d = RenameIdent(d, old.ident.name = old[i], new.ident.name = new[i])
+}
+```
