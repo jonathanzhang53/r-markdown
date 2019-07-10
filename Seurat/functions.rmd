@@ -12,9 +12,13 @@ library(gplots)
 library(ggcorrplot)
 ```
 
+<<<<<<< HEAD
 Note: My Seurat object is stored in d, and d_mica is a branched form of d, while d is kept as a reference just in case. 
 d_aux is created in corr() as another branch.
 Seurat Version: 2.3.4
+=======
+Note: My Seurat object is stored in d, and d_mica is a branched form of d, while d is kept as a reference just in case. d_aux is created in corr() as another branch.
+>>>>>>> 7f83c5949c082c6a8b4122d4c40158cbf853e34f
 
 ## Visualization Functions
 These simple functions made it easier to pull up vln plots and tSNE graphs instead of having to repaste longer function calls.
