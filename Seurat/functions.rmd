@@ -8,7 +8,11 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(Seurat)
+library(gplots)
+library(ggcorrplot)
 ```
+
+Note: My Seurat object is stored in d, and d_mica is a branched form of d, while d is kept as a reference just in case. d_aux is created in corr() as another branch.
 
 ## Visualization Functions
 These simple functions made it easier to pull up vln plots and tSNE graphs instead of having to repaste longer function calls.
@@ -21,6 +25,36 @@ vln = function(...) {
 tsne = function(...) {
     genes = list(...)
     FeaturePlot(object = d, features.plot = unlist(genes), cols.use = c("grey", "blue"), reduction.use = "tsne")
+}
+corr = function(...) {
+    pick_genes <<- unlist(list(...))
+    d_aux = d_mica
+    d_aux@ident = factor(as.character(d_mica@ident))
+    
+    Z = as.matrix(d_aux@data[pick_genes,])
+    
+    avg_markers_expr <<- matrix(NA, length(table(d_aux@ident)), length(pick_genes))
+    rownames(avg_markers_expr) <<- names(table(d_aux@ident))
+    colnames(avg_markers_expr) <<- pick_genes
+    
+    for (clust in names(table(d_aux@ident))){
+        iclust = which(d_aux@ident == clust)
+        for (g in pick_genes){
+            avg_markers_expr[as.character(clust),g] <<- mean(Z[g,iclust])
+        }
+    }
+    
+    corr1 <<- cor(t(avg_markers_expr))
+    corr2 <<- cor(avg_markers_expr)
+}
+plotcorr = function (correlation) { # meant to be used after corr() with corr1 and corr2 as parameters
+    ggcorrplot(correlation, hc.order = TRUE, outline.col = "white")
+} 
+heat = function () { # meant to be used after corr() with no parameter since avg_markers_expr is already set
+	heatmap.2(avg_markers_expr)
+}
+heatc = function (custom_heat) { # custom heatmap parameter
+	heatmap.2(custom_heat)
 }
 ```
 
@@ -38,4 +72,10 @@ This way, I can concentrate on DE genes that will actually help me identify the 
 ```
 
 ## Handy Functions
-https://github.com/satijalab/seurat/issues/771
+https://github.com/satijalab/seurat/issues/771 Solution:
+
+```{r}
+for (i in 1:30) {
+	d = RenameIdent(d, old.ident.name = old[i], new.ident.name = new[i])
+}
+```
